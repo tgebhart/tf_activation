@@ -275,14 +275,14 @@ class ConvolutionLayer(Layer):
         mid_h = fh//2
         mid_w = fw//2
         inputs = []
-        inputs.append({'in_height': ih, 'in_width': iw, 'weight': W[mid_h, mid_w, ic, oc]})
+        inputs.append({'in_height': ih, 'in_width': iw, 'weight': W[mid_h, mid_w, ic, oc] * float(self.i[ih, iw, ic, oc])})
         for h in range(-mid_h, mid_h):
             h_idx = ih + h
             if h_idx >= 0 and h_idx < self.i.shape[1]:
                 for w in range(-mid_w, mid_w):
                     w_idx = iw + w
                     if w_idx >= 0 and w_idx < self.i.shape[2]:
-                        inputs.append({'in_height': h_idx, 'in_width': w_idx, 'weight': float(W[mid_h + h, mid_w + w, ic, oc]) * float(self.i[idx,h_idx,w_idx,ic])})
+                        inputs.append({'in_height': h_idx, 'in_width': w_idx, 'weight': float(W[mid_h+h,mid_w+w,ic,oc]) * float(self.i[idx,h_idx,w_idx,ic])})
         return inputs
 
 

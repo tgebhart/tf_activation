@@ -64,14 +64,36 @@ def run(return_after=None):
         for i in range(total_iterations):
             batch = mnist.train.next_batch(batch_size)
             if i % epoch_size == 0:
-                result = persistence_module.input_graph_persistence([[5, 5, 1, 32]], ['conv', 'fc'])
-                result.eval()
                 train_accuracy = accuracy.eval(feed_dict={x: batch[0],
                                                         y_: batch[1], keep_prob: 1.0})
                 print('step %d, training accuracy %g' % (i, train_accuracy))
 
                 if num_epoch >= return_after:
                     break
+
+                # conv1 = {}
+                # conv1['W'] = sess.run(net['W_conv1'])
+                # conv1['i'] = sess.run(net['input'], feed_dict={x: batch[0]})
+                # conv1['o'] = sess.run(net['h_conv1'], feed_dict={x: batch[0]})
+                #
+                # fc1 = {}
+                # fc1['W'] = sess.run(net['W_fc1'])
+                # fc1['i'] = conv1['o']
+                # fc1['o'] = sess.run(net['h_fc1'], feed_dict={x: batch[0]})
+
+                result = persistence_module.input_graph_persistence([net['input'],
+                                                                    net['W_conv1'],
+                                                                    net['h_conv1'],
+                                                                    net['h_conv1'],
+                                                                    net['W_fc1'],
+                                                                    net['h_fc1'],
+                                                                    net['h_fc1_drop'],
+                                                                    net['W_fc2'],
+                                                                    net['y_conv']],
+                                                                    [0, 1, 2, 2, 1, 4, 4, 1, 4])
+                result.eval(feed_dict={x: batch[0], keep_prob:1.0})
+
+
 
             train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
             num_epoch = num_epoch + 1
