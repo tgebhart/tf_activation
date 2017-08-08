@@ -15,8 +15,9 @@ import numpy as np
 from tf_activation import DeepGraph
 from tf_activation import ConvolutionLayer
 
-FLAGS = None
 SAVE_PATH = '../../logdir/models'
+ADV_PATH = '../../logdir/adversaries'
+ELITE_PATH = '../../logdir/elites'
 
 persistence_module = tf.load_op_library('/home/tgebhart/Projects/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_persistence.so')
 
@@ -29,13 +30,9 @@ def run(return_after=None):
     config.gpu_options.allocator_type = 'BFC'
     config.log_device_placement = True
 
-    total_iterations = 200000
-    epoch_size = 100
-    num_steps = total_iterations // epoch_size
-    batch_size = 200
-
-    if return_after is None:
-        return_after = num_steps
+    # one_adversary = np.genfromtxt(os.path.join(ADV_PATH, 'mnist_1_10:32:44_20-07-17.csv'), delimiter=',')
+    # one_adversary = np.genfromtxt(os.path.join(ADV_PATH, 'mnist_8_15:59:29_04-08-17.csv'), delimiter=',')
+    # one_adversary = np.genfromtxt(os.path.join(ELITE_PATH, 'mnist_8_16:13:32_04-08-17.csv'), delimiter=',')
 
     with tf.device('/cpu:0'):
         # Create the model
@@ -59,49 +56,75 @@ def run(return_after=None):
 
     with tf.Session(config=config) as sess:
 
-        num_epoch = 0
-        sess.run(tf.global_variables_initializer())
-        for i in range(total_iterations):
-            batch = mnist.train.next_batch(batch_size)
-            if i % epoch_size == 0:
-                train_accuracy = accuracy.eval(feed_dict={x: batch[0],
-                                                        y_: batch[1], keep_prob: 1.0})
-                print('step %d, training accuracy %g' % (i, train_accuracy))
+        saver.restore(sess, os.path.join(SAVE_PATH, 'mnist_cff_2000.ckpt'))
 
-                if num_epoch >= return_after:
-                    break
-
-                # conv1 = {}
-                # conv1['W'] = sess.run(net['W_conv1'])
-                # conv1['i'] = sess.run(net['input'], feed_dict={x: batch[0]})
-                # conv1['o'] = sess.run(net['h_conv1'], feed_dict={x: batch[0]})
-                #
-                # fc1 = {}
-                # fc1['W'] = sess.run(net['W_fc1'])
-                # fc1['i'] = conv1['o']
-                # fc1['o'] = sess.run(net['h_fc1'], feed_dict={x: batch[0]})
-
-                result = persistence_module.input_graph_persistence([net['input'],
-                                                                    net['W_conv1'],
-                                                                    net['h_conv1'],
-                                                                    net['h_conv1'],
-                                                                    net['W_fc1'],
-                                                                    net['h_fc1'],
-                                                                    net['h_fc1_drop'],
-                                                                    net['W_fc2'],
-                                                                    net['y_conv']],
-                                                                    [0, 1, 2, 2, 1, 4, 4, 1, 4])
-                result.eval(feed_dict={x: batch[0], keep_prob:1.0})
+        # test_inputs = np.stack((mnist.test.images[2],one_adversary))
+        test_inputs = np.stack((mnist.test.images[2],mnist.test.images[61]))
 
 
-
-            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-            num_epoch = num_epoch + 1
-
-        print('test accuracy %g' % accuracy.eval(feed_dict={
-            x: mnist.test.images[:1000], y_: mnist.test.labels[:1000], keep_prob: 1.0}))
+        acc = accuracy.eval(feed_dict={
+            x: test_inputs, y_: mnist.test.labels[2:3], keep_prob: 1.0})
 
 
+        p = 99
+
+
+        percentiles = persistence_module.layerwise_percentile([net['input'],
+                                                        net['W_conv1'],
+                                                        net['h_conv1'],
+                                                        net['h_conv1'],
+                                                        net['W_fc1'],
+                                                        net['h_fc1'],
+                                                        net['h_fc1_drop'],
+                                                        net['W_fc2'],
+                                                        net['y_conv']],
+                                                        [0, 1, 2, 2, 1, 4, 4, 1, 4],
+                                                        [p,p,p])
+
+        ps1 = percentiles.eval(feed_dict={x: test_inputs[1:2], keep_prob:1.0});
+        print(ps1)
+
+        ps2 = percentiles.eval(feed_dict={x: test_inputs[1:2], keep_prob:1.0});
+        print(ps2)
+
+        result = persistence_module.input_graph_persistence([net['input'],
+                                                            net['W_conv1'],
+                                                            net['h_conv1'],
+                                                            net['h_conv1'],
+                                                            net['W_fc1'],
+                                                            net['h_fc1'],
+                                                            net['h_fc1_drop'],
+                                                            net['W_fc2'],
+                                                            net['y_conv']],
+                                                            [0, 1, 2, 2, 1, 4, 4, 1, 4],
+                                                            np.stack((ps1, ps2))
+                                                            )
+        r = result.eval(feed_dict={x: test_inputs[1:], keep_prob:1.0})
+        print(r)
+
+        #
+        # print(np.stack((ps1, ps2)).shape)
+        #
+
+        # result = persistence_module.bottleneck_distance([net['input'],
+        #                                                 net['W_conv1'],
+        #                                                 net['h_conv1'],
+        #                                                 net['h_conv1'],
+        #                                                 net['W_fc1'],
+        #                                                 net['h_fc1'],
+        #                                                 net['h_fc1_drop'],
+        #                                                 net['W_fc2'],
+        #                                                 net['y_conv']],
+        #                                                 [0, 1, 2, 2, 1, 4, 4, 1, 4],
+        #                                                 np.stack((ps1, ps2))
+        #                                                 )
+        #
+        #
+        # r = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
+        # print('distance:', r)
+
+        print('Test accuracy: {}'.format(acc))
+        print('for labels: ', mnist.test.labels[2], mnist.test.labels[5])
 
         # print('saving ...')
         # save_path = saver.save(sess, os.path.join(SAVE_PATH, 'mnist_cff_' + str(return_after) + '.ckpt'))

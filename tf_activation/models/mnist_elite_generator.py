@@ -1,5 +1,5 @@
 from tf_activation import DeepGraph
-from tf_activation.models import mnist_cpcpff as mnist_model
+from tf_activation.models import mnist_cff as mnist_model
 
 import math
 import random
@@ -122,6 +122,7 @@ def train_elites(model, im, lab, trials=10000, size=200, num_changes=10, print_e
                 print('Min cross-entropy in trial {}: {}'.format(trial, results[min_idx]))
             trial_im = elite_set[min_idx,:,:]
             if results[min_idx] == 0:
+                print('breaking out, elite found')
                 break
             trial = trial + 1
         ret_elite = trial_im

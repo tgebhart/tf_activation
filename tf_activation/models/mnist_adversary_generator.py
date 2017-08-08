@@ -1,5 +1,5 @@
 from tf_activation import DeepGraph
-from tf_activation.models import mnist_cpcpff as mnist_model
+from tf_activation.models import mnist_cff as mnist_model
 
 import math
 import random
@@ -104,6 +104,7 @@ def train_adversaries(model, im, lab, trials=100000, print_every=100, size=200, 
 
     saver = tf.train.Saver()
     ret_adversary = None
+    save_name = 'mnist_' + time.strftime("%H:%M:%S_%d-%m-%y") + '.csv'
     with tf.Session() as sess:
         saver.restore(sess, os.path.join(MODEL_DIR, model))
         im = np.reshape(im, (1,im.shape[0]))
@@ -123,6 +124,7 @@ def train_adversaries(model, im, lab, trials=100000, print_every=100, size=200, 
             if trial % print_every == 0:
                 print('Max cross-entropy in trial {}: {}'.format(trial, results[max_idx]))
                 print('Accuracy at trial {}: {}'.format(trial,  acc))
+                np.savetxt(os.path.join(SAVE_DIR, str(trial) + '_' + save_name), trial_im, delimiter=',')
             if acc != 1:
                 ret_adversary = trial_im
                 print('FOUND ADVERSARY AT TRIAL {}'.format(trial))
