@@ -35,7 +35,7 @@ def run(return_after=None):
     if return_after is None:
         return_after = num_steps
 
-    with tf.device('/cpu:0'):
+    with tf.device('/gpu:0'):
         # Create the model
         x = tf.placeholder(tf.float32, [None, 784])
 

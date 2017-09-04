@@ -19,7 +19,7 @@ SAVE_PATH = '../../logdir/models'
 ADV_PATH = '../../logdir/adversaries'
 ELITE_PATH = '../../logdir/elites'
 
-persistence_module = tf.load_op_library('/home/tgebhart/Projects/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_persistence.so')
+persistence_module = tf.load_op_library('/home/tgebhart/python/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_persistence.so')
 
 def run(return_after=None):
 
@@ -59,14 +59,14 @@ def run(return_after=None):
         saver.restore(sess, os.path.join(SAVE_PATH, 'mnist_cff_2000.ckpt'))
 
         # test_inputs = np.stack((mnist.test.images[2],one_adversary))
-        test_inputs = np.stack((mnist.test.images[2],mnist.test.images[61]))
+        test_inputs = np.stack((mnist.test.images[3],mnist.test.images[61]))
 
 
         acc = accuracy.eval(feed_dict={
             x: test_inputs, y_: mnist.test.labels[2:3], keep_prob: 1.0})
 
 
-        p = 99
+        p = 99.95
 
 
         percentiles = persistence_module.layerwise_percentile([net['input'],
@@ -87,41 +87,41 @@ def run(return_after=None):
         ps2 = percentiles.eval(feed_dict={x: test_inputs[1:2], keep_prob:1.0});
         print(ps2)
 
-        result = persistence_module.input_graph_persistence([net['input'],
-                                                            net['W_conv1'],
-                                                            net['h_conv1'],
-                                                            net['h_conv1'],
-                                                            net['W_fc1'],
-                                                            net['h_fc1'],
-                                                            net['h_fc1_drop'],
-                                                            net['W_fc2'],
-                                                            net['y_conv']],
-                                                            [0, 1, 2, 2, 1, 4, 4, 1, 4],
-                                                            np.stack((ps1, ps2))
-                                                            )
-        r = result.eval(feed_dict={x: test_inputs[1:], keep_prob:1.0})
-        print(r)
+        # result = persistence_module.input_graph_persistence([net['input'],
+        #                                                     net['W_conv1'],
+        #                                                     net['h_conv1'],
+        #                                                     net['h_conv1'],
+        #                                                     net['W_fc1'],
+        #                                                     net['h_fc1'],
+        #                                                     net['h_fc1_drop'],
+        #                                                     net['W_fc2'],
+        #                                                     net['y_conv']],
+        #                                                     [0, 1, 2, 2, 1, 4, 4, 1, 4],
+        #                                                     np.stack((ps1, ps2))
+        #                                                     )
+        # r = result.eval(feed_dict={x: test_inputs[1:], keep_prob:1.0})
+        # print(r)
 
         #
         # print(np.stack((ps1, ps2)).shape)
         #
 
-        # result = persistence_module.bottleneck_distance([net['input'],
-        #                                                 net['W_conv1'],
-        #                                                 net['h_conv1'],
-        #                                                 net['h_conv1'],
-        #                                                 net['W_fc1'],
-        #                                                 net['h_fc1'],
-        #                                                 net['h_fc1_drop'],
-        #                                                 net['W_fc2'],
-        #                                                 net['y_conv']],
-        #                                                 [0, 1, 2, 2, 1, 4, 4, 1, 4],
-        #                                                 np.stack((ps1, ps2))
-        #                                                 )
-        #
-        #
-        # r = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
-        # print('distance:', r)
+        result = persistence_module.bottleneck_distance([net['input'],
+                                                        net['W_conv1'],
+                                                        net['h_conv1'],
+                                                        net['h_conv1'],
+                                                        net['W_fc1'],
+                                                        net['h_fc1'],
+                                                        net['h_fc1_drop'],
+                                                        net['W_fc2'],
+                                                        net['y_conv']],
+                                                        [0, 1, 2, 2, 1, 4, 4, 1, 4],
+                                                        np.stack((ps1, ps2))
+                                                        )
+
+
+        r = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
+        print('distance:', r)
 
         print('Test accuracy: {}'.format(acc))
         print('for labels: ', mnist.test.labels[2], mnist.test.labels[5])
