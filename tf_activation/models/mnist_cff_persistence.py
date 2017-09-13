@@ -30,7 +30,7 @@ def run(return_after=None):
     config.gpu_options.allocator_type = 'BFC'
     config.log_device_placement = True
 
-    # one_adversary = np.genfromtxt(os.path.join(ADV_PATH, 'mnist_1_10:32:44_20-07-17.csv'), delimiter=',')
+    one_adversary = np.genfromtxt(os.path.join(ADV_PATH, 'mnist_1_10:32:44_20-07-17.csv'), delimiter=',')
     # one_adversary = np.genfromtxt(os.path.join(ADV_PATH, 'mnist_8_15:59:29_04-08-17.csv'), delimiter=',')
     # one_adversary = np.genfromtxt(os.path.join(ELITE_PATH, 'mnist_8_16:13:32_04-08-17.csv'), delimiter=',')
 
@@ -59,14 +59,14 @@ def run(return_after=None):
         saver.restore(sess, os.path.join(SAVE_PATH, 'mnist_cff_2000.ckpt'))
 
         # test_inputs = np.stack((mnist.test.images[2],one_adversary))
-        test_inputs = np.stack((mnist.test.images[3],mnist.test.images[61]))
+        test_inputs = np.stack((mnist.test.images[1],mnist.test.images[2]))
 
 
         acc = accuracy.eval(feed_dict={
             x: test_inputs, y_: mnist.test.labels[2:3], keep_prob: 1.0})
 
 
-        p = 99.95
+        p = 99
 
 
         percentiles = persistence_module.layerwise_percentile([net['input'],
@@ -106,7 +106,7 @@ def run(return_after=None):
         # print(np.stack((ps1, ps2)).shape)
         #
 
-        result = persistence_module.bottleneck_distance([net['input'],
+        result = persistence_module.wasserstein_distance([net['input'],
                                                         net['W_conv1'],
                                                         net['h_conv1'],
                                                         net['h_conv1'],
@@ -118,6 +118,19 @@ def run(return_after=None):
                                                         [0, 1, 2, 2, 1, 4, 4, 1, 4],
                                                         np.stack((ps1, ps2))
                                                         )
+
+        # result = persistence_module.bottleneck_distance([net['input'],
+        #                                                 net['W_conv1'],
+        #                                                 net['h_conv1'],
+        #                                                 net['h_conv1'],
+        #                                                 net['W_fc1'],
+        #                                                 net['h_fc1'],
+        #                                                 net['h_fc1_drop'],
+        #                                                 net['W_fc2'],
+        #                                                 net['y_conv']],
+        #                                                 [0, 1, 2, 2, 1, 4, 4, 1, 4],
+        #                                                 np.stack((ps1, ps2))
+        #                                                 )
 
 
         r = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
