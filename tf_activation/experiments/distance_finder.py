@@ -20,6 +20,7 @@ SAVE_PATH = '../../logdir/models'
 ADV_PATH = '../../logdir/adversaries'
 ELITE_PATH = '../../logdir/elites'
 DATA_PATH = '../../logdir/data/experiments'
+DIAGRAM_DATA_DIR_NAME = 'diagram_data'
 
 S = 100
 I = 0
@@ -90,6 +91,29 @@ def regress(X, y, xlab, ylab, n, fname=None):
 
     plt.savefig(os.path.join(n, 'regression_' + str(fname) + '.png'))
 
+def plot_diagram(diag, n, i):
+
+    ax = plt.subplot()
+
+    ax.scatter(diag[:,0], diag[:,1], s=25, c=diag[:,0]**2 - diag[:,1], cmap=plt.cm.coolwarm, zorder=10)
+    lims = [
+        np.min([1]),  # min of both axes
+        np.max([0]),  # max of both axes
+    ]
+
+    # now plot both limits against eachother
+
+    ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
+    ax.set_aspect('equal')
+    ax.set_xlim(lims)
+    ax.set_ylim(lims)
+    plt.xlabel('Birth Time')
+    plt.ylabel('Death Time')
+
+    plt.savefig(os.path.join(n, 'diagram_' + str(i) + '.png'))
+
+
+
 def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
@@ -106,6 +130,8 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
         n = os.path.join(DATA_PATH, n)
     if not os.path.exists(n):
         os.makedirs(n)
+    if not os.path.exists(os.path.join(n, DIAGRAM_DATA_DIR_NAME)):
+        os.makedirs(os.path.join(n, DIAGRAM_DATA_DIR_NAME))
     if f is not None:
         imf = np.genfromtxt(f, delimiter=',')
     else:
@@ -118,6 +144,8 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
     test_inputs = np.stack((imf, iml))
     correct_label = mnist.test.labels[mnist_map[c]]
     test_labels = np.stack((correct_label, correct_label))
+
+    diagram_data_dir = os.path.join(n, DIAGRAM_DATA_DIR_NAME)
 
     columns = ['in_distance', 'per_distance', 'cross_entropy', 'y_conv', 'accuracy']
     index = range(s)
@@ -166,10 +194,31 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
             test_inputs = np.stack((imf, path[i]))
             in_distance = np.linalg.norm(imf - path[i], ord=2)
 
+            ps2 = percentiles.eval(feed_dict={x: test_inputs[1:2], keep_prob:1.0})
+
             if i % e == 0:
                 save_interpolation(path[i], i, n)
 
-            ps2 = percentiles.eval(feed_dict={x: test_inputs[1:2], keep_prob:1.0})
+                diagram_filename = os.path.join(diagram_data_dir, 'diagram_' + str(i) + '.csv')
+
+                result = persistence_module.input_graph_persistence([net['input'],
+                                                                    net['W_conv1'],
+                                                                    net['h_conv1'],
+                                                                    net['h_conv1'],
+                                                                    net['W_fc1'],
+                                                                    net['h_fc1'],
+                                                                    net['h_fc1_drop'],
+                                                                    net['W_fc2'],
+                                                                    net['y_conv']],
+                                                                    [0, 1, 2, 2, 1, 4, 4, 1, 4],
+                                                                    np.stack((ps1, ps2)),
+                                                                    diagram_filename
+                                                                    )
+                r = result.eval(feed_dict={x: test_inputs[1:], keep_prob:1.0})
+
+                diag = np.genfromtxt(diagram_filename, delimiter=',')
+
+                plot_diagram(diag, n, i)
 
             result = persistence_module.wasserstein_distance([net['input'],
                                                             net['W_conv1'],
