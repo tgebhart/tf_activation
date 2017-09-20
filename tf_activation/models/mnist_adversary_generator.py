@@ -124,7 +124,7 @@ def train_adversaries(model, im, lab, trials=100000, print_every=100, size=200, 
             if trial % print_every == 0:
                 print('Max cross-entropy in trial {}: {}'.format(trial, results[max_idx]))
                 print('Accuracy at trial {}: {}'.format(trial,  acc))
-                np.savetxt(os.path.join(SAVE_DIR, str(trial) + '_' + save_name), trial_im, delimiter=',')
+                # np.savetxt(os.path.join(SAVE_DIR, str(trial) + '_' + save_name), trial_im, delimiter=',')
             if acc != 1:
                 ret_adversary = trial_im
                 print('FOUND ADVERSARY AT TRIAL {}'.format(trial))
