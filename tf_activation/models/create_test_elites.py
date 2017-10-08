@@ -18,7 +18,8 @@ MODEL_DIR = '../../logdir/models'
 SAVE_DIR = '../../logdir/elites'
 
 MODEL = 'mnist_cff_2000.ckpt'
-SAVE_FOLDER_NAME = 'mnist_test_elites_' + time.strftime("%H:%M:%S_%d-%m-%y")
+# SAVE_FOLDER_NAME = 'mnist_test_elites_' + time.strftime("%H:%M:%S_%d-%m-%y")
+SAVE_FOLDER_NAME = 'mnist_test_elites_17:49:02_26-09-17'
 
 if not os.path.exists(os.path.join(SAVE_DIR, SAVE_FOLDER_NAME)):
     os.makedirs(os.path.join(SAVE_DIR, SAVE_FOLDER_NAME))
@@ -31,7 +32,7 @@ PRINT_EVERY = 100
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 model = os.path.join(MODEL_DIR, MODEL)
 
-for i in range(mnist.test.images.shape[0]):
+for i in range(34,mnist.train.images.shape[0]):
 
     im = mnist.test.images[i]
     lab = mnist.test.labels[i]

@@ -6,6 +6,11 @@ import math
 import random
 import os
 import argparse
+import errno
+from functools import wraps
+import signal
+from time import time
+import sys
 
 import tensorflow as tf
 import numpy as np
@@ -30,9 +35,11 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.5
 config.allow_soft_placement = True
 config.gpu_options.allocator_type = 'BFC'
-config.log_device_placement = True
+config.log_device_placement = False
 
 persistence_module = tf.load_op_library('/home/tgebhart/python/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_persistence.so')
+bottleneck_module = tf.load_op_library('/home/tgebhart/python/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_bottleneck.so')
+
 
 def create_path(start_im, end_im, steps=100):
     ret = []
@@ -44,6 +51,27 @@ def create_path(start_im, end_im, steps=100):
 def save_interpolation(im, step, n):
     plt.imsave(os.path.join(n, 'interpolation_' + str(step) + '.png'),
                 np.reshape(im,[28,28]), cmap="gray")
+
+class TimeoutError(Exception):
+    pass
+
+def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
+    def decorator(func):
+        def _handle_timeout(signum, frame):
+            raise TimeoutError(error_message)
+
+        def wrapper(*args, **kwargs):
+            signal.signal(signal.SIGALRM, _handle_timeout)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+            return result
+
+        return wraps(func)(wrapper)
+
+    return decorator
 
 def regress(X, y, xlab, ylab, n, fname=None):
 
@@ -89,7 +117,8 @@ def regress(X, y, xlab, ylab, n, fname=None):
     plt.ylabel(ylab)
     plt.title('{} vs {}'.format(xlab, ylab))
 
-    plt.savefig(os.path.join(n, 'regression_' + str(fname) + '.png'))
+    plt.savefig(os.path.join(n, 'regression_' + str(fname) + '.svg'), dpi=1200,
+                            format='svg', bbox_inches='tight')
 
 def plot_diagram(diag, n, i):
 
@@ -97,8 +126,8 @@ def plot_diagram(diag, n, i):
 
     ax.scatter(diag[:,0], diag[:,1], s=25, c=diag[:,0]**2 - diag[:,1], cmap=plt.cm.coolwarm, zorder=10)
     lims = [
-        np.min([1]),  # min of both axes
-        np.max([0]),  # max of both axes
+        np.min([0]),  # min of both axes
+        np.max([1]),  # max of both axes
     ]
 
     # now plot both limits against eachother
@@ -110,11 +139,16 @@ def plot_diagram(diag, n, i):
     plt.xlabel('Birth Time')
     plt.ylabel('Death Time')
 
-    plt.savefig(os.path.join(n, 'diagram_' + str(i) + '.png'))
+    plt.savefig(os.path.join(n, 'diagram_' + str(i) + '.svg'), dpi=1200,
+                            format='svg', bbox_inches='tight')
+
+    plt.close()
+    plt.clf()
+    plt.cla()
 
 
 
-def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
+def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=False):
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
     if l is None and m is None:
@@ -172,6 +206,11 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
 
     with tf.Session(config=config) as sess:
 
+        @timeout(10)
+        def per_distance_func(result, test_inputs):
+            per_distance = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
+            return per_distance
+
         saver.restore(sess, os.path.join(SAVE_PATH, model))
         test_inputs = np.stack((imf, path[0]))
 
@@ -220,20 +259,39 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
 
                 plot_diagram(diag, n, i)
 
-            result = persistence_module.wasserstein_distance([net['input'],
-                                                            net['W_conv1'],
-                                                            net['h_conv1'],
-                                                            net['h_conv1'],
-                                                            net['W_fc1'],
-                                                            net['h_fc1'],
-                                                            net['h_fc1_drop'],
-                                                            net['W_fc2'],
-                                                            net['y_conv']],
-                                                            [0, 1, 2, 2, 1, 4, 4, 1, 4],
-                                                            np.stack((ps1, ps2))
-                                                            )
+            if b:
+                result = bottleneck_module.bottleneck_distance([net['input'],
+                                                                net['W_conv1'],
+                                                                net['h_conv1'],
+                                                                net['h_conv1'],
+                                                                net['W_fc1'],
+                                                                net['h_fc1'],
+                                                                net['h_fc1_drop'],
+                                                                net['W_fc2'],
+                                                                net['y_conv']],
+                                                                [0, 1, 2, 2, 1, 4, 4, 1, 4],
+                                                                np.stack((ps1, ps2))
+                                                                )
+            else:
+                result = persistence_module.wasserstein_distance([net['input'],
+                                                                net['W_conv1'],
+                                                                net['h_conv1'],
+                                                                net['h_conv1'],
+                                                                net['W_fc1'],
+                                                                net['h_fc1'],
+                                                                net['h_fc1_drop'],
+                                                                net['W_fc2'],
+                                                                net['y_conv']],
+                                                                [0, 1, 2, 2, 1, 4, 4, 1, 4],
+                                                                np.stack((ps1, ps2))
+                                                                )
 
-            per_distance = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
+            try:
+                per_distance = per_distance_func(result, test_inputs)
+            except TimeoutError:
+                print('TimeoutError!')
+                timeouts.append(i)
+                pass
             print('Step: ', i)
             print('distance:', per_distance)
 
@@ -266,6 +324,11 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None):
     y = test_df['y_conv'].as_matrix()
     regress(X, y, 'Input Distance', 'Correct Class Probability', n)
 
+    X = np.array(test_df.index)
+    X = X.reshape((X.shape[0], 1))
+    y = test_df['per_distance'].as_matrix()
+    regress(X, y, 'Step', 'Persistence Distance', n)
+
 
 
 
@@ -281,9 +344,10 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--last_image', help='full path of the ending image to be interpolated to', type=str)
     parser.add_argument('-m', '--mnist_last', help='the integer of the mnist dataset if to be used as `last_image`', type=int)
     parser.add_argument('-e', '--save_every', help='number of runs between saving each interpolated image', type=int)
+    parser.add_argument('-b', '--bottleneck', help='whether to use bottleneck as distance metric', type=bool, default=False)
 
     args = parser.parse_args()
 
     run(args.model, l=args.last_image, i=args.integer, f=args.first_image,
         s=args.int_steps, n=args.folder_name, p=args.percentile, c=args.correct_label,
-        m=args.mnist_last, e=args.save_every)
+        m=args.mnist_last, e=args.save_every, b=args.bottleneck)

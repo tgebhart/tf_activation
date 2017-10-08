@@ -18,7 +18,8 @@ MODEL_DIR = '../../logdir/models'
 SAVE_DIR = '../../logdir/adversaries'
 
 MODEL = 'mnist_cff_2000.ckpt'
-SAVE_FOLDER_NAME = 'mnist_test_adversaries_' + time.strftime("%H:%M:%S_%d-%m-%y")
+# SAVE_FOLDER_NAME = 'mnist_test_adversaries_' + time.strftime("%H:%M:%S_%d-%m-%y")
+SAVE_FOLDER_NAME = 'mnist_test_adversaries_19:50:09_18-09-17'
 
 TRIALS = 100000
 SIZE = 250
@@ -32,8 +33,8 @@ if not os.path.exists(os.path.join(SAVE_DIR, SAVE_FOLDER_NAME)):
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 model = os.path.join(MODEL_DIR, MODEL)
 
-for i in range(mnist.test.images.shape[0]):
-
+# for i in range():
+for i in range(85, mnist.test.images.shape[0]):
     im = mnist.test.images[i]
     lab = mnist.test.labels[i]
     label = np.argmax(lab)
