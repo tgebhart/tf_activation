@@ -52,27 +52,6 @@ def save_interpolation(im, step, n):
     plt.imsave(os.path.join(n, 'interpolation_' + str(step) + '.png'),
                 np.reshape(im,[28,28]), cmap="gray")
 
-class TimeoutError(Exception):
-    pass
-
-def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
-    def decorator(func):
-        def _handle_timeout(signum, frame):
-            raise TimeoutError(error_message)
-
-        def wrapper(*args, **kwargs):
-            signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.alarm(seconds)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                signal.alarm(0)
-            return result
-
-        return wraps(func)(wrapper)
-
-    return decorator
-
 def regress(X, y, xlab, ylab, n, fname=None):
 
     if fname is None:
@@ -109,7 +88,7 @@ def regress(X, y, xlab, ylab, n, fname=None):
     # Plot outputs
 
     ax.scatter(X, y,  color='black')
-    ax.plot(X, regr.predict(X), color='silver', linewidth=3)
+    # ax.plot(X, regr.predict(X), color='silver', linewidth=3)
     ax.set_xlim(X_min, X_max)
     ax.set_ylim(y_min, y_max)
 
@@ -124,7 +103,7 @@ def plot_diagram(diag, n, i):
 
     ax = plt.subplot()
 
-    ax.scatter(diag[:,0], diag[:,1], s=25, c=diag[:,0]**2 - diag[:,1], cmap=plt.cm.coolwarm, zorder=10)
+    ax.scatter(diag[:,0], diag[:,1], s=25, c=(diag[:,0] - diag[:,1])**2, cmap=plt.cm.coolwarm, zorder=10)
     lims = [
         np.min([0]),  # min of both axes
         np.max([1]),  # max of both axes
@@ -206,7 +185,6 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=
 
     with tf.Session(config=config) as sess:
 
-        @timeout(10)
         def per_distance_func(result, test_inputs):
             per_distance = result.eval(feed_dict={x: test_inputs, keep_prob:1.0})
             return per_distance
@@ -290,7 +268,6 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=
                 per_distance = per_distance_func(result, test_inputs)
             except TimeoutError:
                 print('TimeoutError!')
-                timeouts.append(i)
                 pass
             print('Step: ', i)
             print('distance:', per_distance)

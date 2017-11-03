@@ -9,8 +9,10 @@ import pickle
 
 from tensorflow.examples.tutorials.mnist import input_data
 
-import tensorflow as tf
 import numpy as np
+np.random.seed(1)
+import tensorflow as tf
+
 
 from tf_activation import DeepGraph
 from tf_activation import ConvolutionLayer
@@ -23,14 +25,15 @@ def run(return_after=None):
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.5
-    config.gpu_options.allocator_type = 'BFC'
-    config.log_device_placement = True
+    # config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    # config.gpu_options.allocator_type = 'BFC'
+    config.log_device_placement = False
 
-    total_iterations = 200000
-    epoch_size = 100
+    total_iterations = 20000
+    epoch_size = 51
+    train_sample_num = 55000
     num_steps = total_iterations // epoch_size
-    batch_size = 200
+    batch_size = 128
 
     if return_after is None:
         return_after = num_steps
@@ -57,26 +60,20 @@ def run(return_after=None):
 
     with tf.Session(config=config) as sess:
 
-        num_epoch = 0
         sess.run(tf.global_variables_initializer())
-        for i in range(total_iterations):
-            batch = mnist.train.next_batch(batch_size)
-            if i % epoch_size == 0:
-                train_accuracy = accuracy.eval(feed_dict={x: batch[0],
-                                                        y_: batch[1], keep_prob: 1.0})
-                print('step %d, training accuracy %g' % (i, train_accuracy))
-
-                if num_epoch >= return_after:
-                    break
-
-            train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
-            num_epoch = num_epoch + 1
+        for epoch in range(epoch_size):
+            acc_idx = np.random.randint(mnist.train.images.shape[0]-1, size=(1000))
+            train_accuracy = accuracy.eval(feed_dict={x: mnist.train.images[acc_idx], y_: mnist.train.labels[acc_idx], keep_prob: 1.0})
+            print("Epoch: %d, training accuracy %g" % (epoch, train_accuracy))
+            for i in range(train_sample_num//batch_size):
+                batch = mnist.train.next_batch(batch_size, shuffle=False)
+                train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
         print('test accuracy %g' % accuracy.eval(feed_dict={
             x: mnist.test.images[:1000], y_: mnist.test.labels[:1000], keep_prob: 1.0}))
 
         print('saving ...')
-        save_path = saver.save(sess, os.path.join(SAVE_PATH, 'mnist_cff_' + str(return_after) + '.ckpt'))
+        save_path = saver.save(sess, os.path.join(SAVE_PATH, 'mnist_cff'+str(epoch_size)+'.ckpt'))
         print("model saved in file: {}".format(save_path))
 
 def deepnn(x):
@@ -140,7 +137,7 @@ def max_pool_2x2(x):
 
 def weight_variable(shape, name=None):
    """weight_variable generates a weight variable of a given shape."""
-   initial = tf.truncated_normal(shape, stddev=0.1)
+   initial = tf.truncated_normal(shape, stddev=0.1, seed=1)
    if name is None:
        return tf.Variable(initial)
    return tf.Variable(initial, name=name)
@@ -154,8 +151,4 @@ def bias_variable(shape, name=None):
 
 
 if __name__ == "__main__":
-    try:
-        return_after = int(sys.argv[1])
-    except IndexError:
-        return_after = None
-    run(return_after=return_after)
+    run()
