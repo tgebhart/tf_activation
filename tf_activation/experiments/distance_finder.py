@@ -30,6 +30,7 @@ DIAGRAM_DATA_DIR_NAME = 'diagram_data'
 S = 100
 I = 0
 P = 99
+H = 0
 
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.5
@@ -106,7 +107,7 @@ def plot_diagram(diag, n, i):
     ax.scatter(diag[:,0], diag[:,1], s=25, c=(diag[:,0] - diag[:,1])**2, cmap=plt.cm.coolwarm, zorder=10)
     lims = [
         np.min([0]),  # min of both axes
-        np.max([1]),  # max of both axes
+        np.max([1.2]),  # max of both axes
     ]
 
     # now plot both limits against eachother
@@ -127,7 +128,7 @@ def plot_diagram(diag, n, i):
 
 
 
-def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=False):
+def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=False, h=0):
     mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
     if l is None and m is None:
@@ -153,6 +154,8 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=
         c = i
     if e is None:
         e = s
+
+    H = h
 
     test_inputs = np.stack((imf, iml))
     correct_label = mnist.test.labels[mnist_map[c]]
@@ -229,6 +232,7 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=
                                                                     net['y_conv']],
                                                                     [0, 1, 2, 2, 1, 4, 4, 1, 4],
                                                                     np.stack((ps1, ps2)),
+                                                                    H,
                                                                     diagram_filename
                                                                     )
                 r = result.eval(feed_dict={x: test_inputs[1:], keep_prob:1.0})
@@ -261,7 +265,8 @@ def run(model, l=None, i=I, f=None, s=S, n=None, p=P, c=None, m=None, e=None, b=
                                                                 net['W_fc2'],
                                                                 net['y_conv']],
                                                                 [0, 1, 2, 2, 1, 4, 4, 1, 4],
-                                                                np.stack((ps1, ps2))
+                                                                np.stack((ps1, ps2)),
+                                                                H
                                                                 )
 
             try:
@@ -322,9 +327,10 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--mnist_last', help='the integer of the mnist dataset if to be used as `last_image`', type=int)
     parser.add_argument('-e', '--save_every', help='number of runs between saving each interpolated image', type=int)
     parser.add_argument('-b', '--bottleneck', help='whether to use bottleneck as distance metric', type=bool, default=False)
+    parser.add_argument('-y', '--homology', help='homology dimension', type=int, default=H)
 
     args = parser.parse_args()
 
     run(args.model, l=args.last_image, i=args.integer, f=args.first_image,
         s=args.int_steps, n=args.folder_name, p=args.percentile, c=args.correct_label,
-        m=args.mnist_last, e=args.save_every, b=args.bottleneck)
+        m=args.mnist_last, e=args.save_every, b=args.bottleneck, h=args.homology)

@@ -24,16 +24,19 @@ import os
 import signal
 
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
-
+dp = 0.001
 SAVE_PATH = '../logdir/models'
-ADV_SET = 'carlini_attacks_targeted1000'
+ADV_SET = 'carlini_attacks_targeted5020'
 FIGURE_PATH = '../logdir/data/graphs/adversaries/plots/' + ADV_SET
-GRAPHML_PATH = '../logdir/data/graphs/adversaries/' + ADV_SET
+GRAPHML_PATH = '../logdir/data/graphs/adversaries/' + ADV_SET + '/' + str(100*dp)
 ADV_PATH = '../logdir/adversaries/' + ADV_SET
 model = 'mnist_cff50.ckpt'
-advs = [f for f in listdir(ADV_PATH) if isfile(join(ADV_PATH, f))]
+advs = [f for f in listdir(ADV_PATH) if isfile(join(ADV_PATH, f))][:450]
 p = 99
-dp = 85
+
+if not os.path.exists(GRAPHML_PATH):
+    os.makedirs(GRAPHML_PATH)
+
 
 config = tf.ConfigProto()
 config.log_device_placement = False
@@ -56,7 +59,6 @@ with tf.device('/cpu:0'):
         saver = tf.train.Saver()
 
 with tf.Session(config=config) as sess:
-    # advs = advs[:advs.index('9_7_16.csv')+1]
     for adv in advs:
         print("Adversary File: {}".format(adv))
         i = int(adv[4:adv.find('.')])
@@ -101,6 +103,7 @@ with tf.Session(config=config) as sess:
                                                                 [0, 1, 2, 2, 1, 4, 4, 1, 4],
                                                                 np.stack((ps1,ps2)),
                                                                 dp,
+                                                                0,
                                                                 diagram_filename
                                                                 )
 

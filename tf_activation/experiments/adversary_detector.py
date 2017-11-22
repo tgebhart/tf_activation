@@ -18,7 +18,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 CLUSTER_PATH = '../../logdir/data/experiments/cluster_mnist'
 SAVE_PATH = '../../logdir/models'
-ADV_PATH = '../../logdir/adversaries/carlini_attacks_targeted500.99'
+ADV_PATH = '../../logdir/adversaries/carlini_attacks_targeted5020'
 ELITE_PATH = '../../logdir/elites'
 DATA_PATH = '../../logdir/data'
 SAVE_FIG_LOC = '../../logdir/figures'
@@ -57,6 +57,7 @@ with tf.device('/cpu:0'):
     # run network
 df = []
 p = 99
+h = 0
 with tf.Session(config=config) as sess:
 
     saver.restore(sess, os.path.join(SAVE_PATH, MODEL))
@@ -124,7 +125,8 @@ with tf.Session(config=config) as sess:
                                                             net['W_fc2'],
                                                             net['y_conv']],
                                                             [0, 1, 2, 2, 1, 4, 4, 1, 4],
-                                                            np.stack((psa, psc))
+                                                            np.stack((psa, psc)),
+                                                            h
                                                             )
 
 
@@ -170,7 +172,8 @@ with tf.Session(config=config) as sess:
                                                             net['W_fc2'],
                                                             net['y_conv']],
                                                             [0, 1, 2, 2, 1, 4, 4, 1, 4],
-                                                            np.stack((pst, psc))
+                                                            np.stack((pst, psc)),
+                                                            h
                                                             )
 
 

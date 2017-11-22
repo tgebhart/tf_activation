@@ -23,12 +23,17 @@ import signal
 
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 
+p = 99
+dp = 0.001
+
 SAVE_PATH = '../logdir/models'
 FIGURE_PATH = '../logdir/data/graphs/plots'
-GRAPHML_PATH = '../logdir/data/graphs'
+GRAPHML_PATH = '../logdir/data/graphs/percentiles/' + str(100*dp)
 model = 'mnist_cff50.ckpt'
-p = 99
-dp = 85
+
+if not os.path.exists(GRAPHML_PATH):
+    os.makedirs(GRAPHML_PATH)
+
 
 mnist_map = {
     0: 3,
@@ -104,6 +109,7 @@ with tf.Session(config=config) as sess:
                                                                 [0, 1, 2, 2, 1, 4, 4, 1, 4],
                                                                 np.stack((ps1,ps2)),
                                                                 dp,
+                                                                0,
                                                                 diagram_filename
                                                                 )
 
