@@ -30,10 +30,11 @@ def run(return_after=None):
     config.log_device_placement = False
 
     total_iterations = 20000
-    epoch_size = 51
+    epoch_size = 50
     train_sample_num = 55000
     num_steps = total_iterations // epoch_size
     batch_size = 128
+    prefix = "reseeded"
 
     if return_after is None:
         return_after = num_steps
@@ -73,7 +74,7 @@ def run(return_after=None):
             x: mnist.test.images[:1000], y_: mnist.test.labels[:1000], keep_prob: 1.0}))
 
         print('saving ...')
-        save_path = saver.save(sess, os.path.join(SAVE_PATH, 'mnist_cff'+str(epoch_size)+'.ckpt'))
+        save_path = saver.save(sess, os.path.join(SAVE_PATH, prefix + 'mnist_cff'+str(epoch_size)+'.ckpt'))
         print("model saved in file: {}".format(save_path))
 
 def deepnn(x):
