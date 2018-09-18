@@ -39,3 +39,6 @@ The following NVIDIA® software must be installed on your system:
   - CUDA Toolkit (>= 8.0)
   - [cuDNN SDK (>= 6.0)](https://docs.nvidia.com/deeplearning/sdk/cudnn-install/index.html)
   - CUPTI ships with the CUDA Toolkit, but you also need to append its path to the LD_LIBRARY_PATH environment variable: export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/extras/CUPTI/lib64
+  
+  
+ If you get stuck in a loop during `./configure` where TF really wants NCCL, defaulting to 1.3 works fine.
