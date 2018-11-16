@@ -8,11 +8,9 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
-import graph_writer
+from tf_activation.utils import dump_graph
 
-from utils import dump_graph
-
-import config
+from tf_activation import config
 
 class Layer(object):
 
@@ -130,7 +128,7 @@ class Layer(object):
             - (list): List of sorted network edges
         """
 
-        s = sorted(self.G.edges(data=True), key=lambda (s,t,d): d['weight'])
+        s = sorted(self.G.edges(data=True), key=lambda t: t[2]['weight'])
         s.reverse()
         return s
 

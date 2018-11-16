@@ -1,7 +1,7 @@
 from networkx.readwrite import json_graph
 import json
 import os
-import config
+from tf_activation import config
 
 def dump_graph(filename, G):
     d = json_graph.node_link_data(G)

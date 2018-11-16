@@ -1,4 +1,3 @@
-from tf_activation import DeepGraph
 from tf_activation.models import mnist_cff as mnist_model
 from tf_activation.models.mnist_map import mnist_map
 
@@ -31,7 +30,7 @@ S = 100
 I = 0
 P = 99
 
-persistence_module = tf.load_op_library('/home/tgebhart/python/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_persistence.so')
+persistence_module = tf.load_op_library('/home/gebha095/tensorflow/bazel-bin/tensorflow/core/user_ops/nn_graph_persistence.so')
 
 def create_path(start_im, end_im, steps=100):
     ret = []

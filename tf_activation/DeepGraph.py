@@ -7,12 +7,11 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
-import graph_writer
-from utils import dump_graph
+from tf_activation.utils import dump_graph
 
-from Layers import ConvolutionLayer, FullyConnectedLayer, PoolingLayer
+from tf_activation.Layers import ConvolutionLayer, FullyConnectedLayer, PoolingLayer
 
-import config
+from tf_activation import config
 
 class DeepGraph(object):
 
@@ -199,7 +198,7 @@ name given in param `name` not found in default layer name options')
             print('Filtering layer {}'.format(i))
             self.network[i][self.graph_layer_name].filter_by_percentile(percentile=percentile)
             self.network[i][self.graph_layer_name].relabel()
-            
+
     def connect_layers(self):
         """Combines individual layer graphs into unified network using
         `nx.compose` function. Sets the result to `self.G`.
@@ -275,7 +274,7 @@ def sorted_network_edge_weights(G):
         - (list): List of sorted network edges
     """
 
-    s = sorted(G.edges(data=True), key=lambda (s,t,d): d['weight'])
+    s = sorted(G.edges(data=True), key=lambda t: t[2]['weight'])
     s.reverse()
     return s
 

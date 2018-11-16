@@ -54,7 +54,7 @@ with tf.device('/cpu:0'):
     saver = tf.train.Saver()
 
 
-    # run network
+# run network
 df = []
 p = 99
 h = 0
